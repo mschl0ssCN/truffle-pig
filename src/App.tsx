@@ -1,25 +1,54 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import { Button, styled, TextField, Typography } from "@mui/material";
+
+const StyledInputWrapperDiv = styled("div")({
+  display: "flex",
+  gap: 15,
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "15px 0",
+});
+
+const StyledPageWrapperDiv = styled("div")({
+  height: "50vh",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
+  alignItems: "center",
+});
 
 function App() {
+  const [searchString, setSearchString] = useState<string>();
+
+  const handleSearchConfirm = () => {
+    const message = searchString
+      ? `You entered ${searchString} to search`
+      : "Input is blank";
+    console.log(message);
+    setSearchString(undefined);
+  };
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+    <StyledPageWrapperDiv>
+      <Typography variant="h2" align="center">
+        Truffle Pig
+      </Typography>
+      <StyledInputWrapperDiv>
+        <TextField
+          id="url-search-input"
+          value={searchString || ""}
+          onChange={(event) => setSearchString(event.target.value)}
+          variant="outlined"
+          size="small"
+        />
+        <Button
+          variant="contained"
+          onClick={handleSearchConfirm}
+          onKeyDown={handleSearchConfirm}
         >
-          Learn React
-        </a>
-      </header>
-    </div>
+          Go!
+        </Button>
+      </StyledInputWrapperDiv>
+    </StyledPageWrapperDiv>
   );
 }
 
