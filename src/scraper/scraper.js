@@ -1,7 +1,6 @@
-const puppeteer = require("puppeteer-extra");
-const stealthPlugin = require('puppeteer-extra-plugin-stealth')
-puppeteer.use(stealthPlugin());
-const chalk = require("chalk");
+import puppeteer from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import chalk from 'chalk';
 
 
 const error = chalk.bold.red;
@@ -10,27 +9,28 @@ const error = chalk.bold.red;
 
 const scrape = async(links) => {
         try{
-            let browser = await puppeteer.launch({ headless: false, devtools: true });
-            let page = await browser.newPage();
+
+            const browser = await puppeteer.use(StealthPlugin()).launch({ headless: false, devtools: true });
+
+            const page = await browser.newPage();
             page.on('console', msg => {
-                for (let y = 0; y < msg.args().length; y++) {
+                for (let y = 0; y < msg.args().length; y+=1) {
                     console.log(msg.args()[y]);
                 }
             });
-            let htmls = [];
-            let errorArrs = []
-            for (let i = 0; i < links.length; i++){
-                let link = links[i];
+            const htmls = [];
+            const errorArrs = []
+            links.forEach(async(link) => {
                 try{
                     await page.goto(link);
                     await page.waitForSelector('body');
-                    let search = await page.content();
+                    await page.content();
                     await page.$x('//script[contains(text(), "")]');
                     let providers = []
-                    let dr_providers = []
-                    let doc = page
-                    let site = await doc.evaluate(() => {
-                        let arr = [];
+                    let drProviders = []
+                    const doc = page
+                    const site = await doc.evaluate(() => {
+                        const arr = [];
                         if (document.evaluate('//script[contains(text(), "//plugin.tradepending.com")]', document, null, XPathResult.BOOLEAN_TYPE, null).booleanValue){
                             arr.push("TradePending")
 
@@ -174,45 +174,35 @@ const scrape = async(links) => {
                         return arr;
                     })
                 providers = site;
-                let uniqueProviders = providers.filter(function(item, pos){
-                    return providers.indexOf(item) == pos
-                })
+                const uniqueProviders = providers.filter((item, pos) => providers.indexOf(item) === pos);
                 providers = uniqueProviders;
-                let srp_url = ""
+                let srpUrl = ""
                 if (providers.includes("DealerInspire")){
-                    srp_url = link + "/new-vehicles/"
+                    srpUrl = `${link}/new-vehicles/`
                 } else if (providers.includes("Dealer eProcess")){
-                    srp_url = link + "/search/new/"
-
+                    srpUrl = `${link}/search/new/`
                 } else if (providers.includes("fusionZONE")){
-                    srp_url = link + "/used-cars-for-sale"
-
+                    srpUrl = `${link}/used-cars-for-sale`
                 } else if (providers.includes("DealerOn")){
-                    srp_url = link + "/used-cars-for-sale"
-
+                    srpUrl = `${link}/used-cars-for-sale`
                 } else if (providers.includes("Team Velocity")){
-                    srp_url = link + "/inventory/new"
-
+                    srpUrl = `${link}/inventory/new`
                 } else if (providers.includes("Sincro")){
-                    srp_url = link + "/new-inventory/index.htm"
-
+                    srpUrl = `${link}/new-inventory/index.htm`
                 }
                 else if (providers.includes("Gu")){
-                    srp_url = link + "/new-vehicles/"
-
+                    srpUrl = `${link}/new-vehicles/`
                 }
                 else if (providers.includes("dealer.com")){
-                    srp_url = link + "/new-inventory/index.htm"
-
+                    srpUrl = `${link}/new-inventory/index.htm`
                 }
                 
-                if (srp_url){
+                if (srpUrl){
                     try {
-                    await page.goto(srp_url);
+                    await page.goto(srpUrl);
                     await page.waitForSelector('body');
-                    let drs = await page.evaluate(() => {
-                        debugger;
-                        let second = []
+                    const drs = await page.evaluate(() => {
+                        const second = [];
                         if (document.evaluate('//script[contains(text(), "roadster")]', document, null, XPathResult.BOOLEAN_TYPE, null).booleanValue){
                             second.push("Roadster")
                         }
@@ -229,39 +219,31 @@ const scrape = async(links) => {
                             second.push("Modal")
                         }
                         if (providers.includes("Gubagoo")){
-                            let gubagoo_scripts = document.querySelectorAll('script[src*=gubagoo]')
-                            if (gubagoo_scripts.length > 0){
-                            gubagoo_script = gubagoo_scripts[0].attributes["src"].value
-                            // open this webpage
-                            if (gubagoo_loader_js.toString().includes('cbo_enabled:!0')){
-                                second.push("Gubagoo DR")
-                            }
-                            }
+                            // TODO gubagoo DR
                         
                         }
                         return second
                     })
-                    dr_providers = drs
+                    drProviders = drs
                         
-                    } catch(error){
-                        debugger;
-                        errorArrs.push({[srp_url]: error})
+                    } catch(innerError){
+                        errorArrs.push({[srpUrl]: innerError})
                     }
                     
                 }
 
 
-                    let object = {
+                    const object = {
                         "providers": providers,
-                        "dr_providers": dr_providers
+                        "drProviders": drProviders
                     }
                     htmls.push({[link]: object});
-                } catch (error){
-                    errorArrs.push({[link]: error})
+                } catch (outerError){
+                    errorArrs.push({[link]: outerError})
                 }
 
             
-            }
+            })
                 
             await browser.close();
 
@@ -269,6 +251,7 @@ const scrape = async(links) => {
     } catch (err) {
         console.log(error); 
     }
+    return null;
 }
 
-module.exports = scrape;
+export default scrape;
